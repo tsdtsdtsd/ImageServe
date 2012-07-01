@@ -9,7 +9,7 @@ Easy configuration and usage, extendable with plugins.
 Intro
 -----
 
-ImageServe uses mode_rewrite to deliver dynamic resized versions for a requested image.
+ImageServe uses mod_rewrite to deliver dynamic resized versions for a requested image.
 
 Features & ToDos
 ----------------
@@ -21,7 +21,6 @@ Features & ToDos
 * Todo: Garbage collection
 * Todo: Plugins
 * Todo: Crop mode
-* 
 
 Basic Usage
 -----------
@@ -53,3 +52,5 @@ Debugging/Logging
 
 License
 -------
+CC BY-SA 
+http://creativecommons.org/licenses/by-sa/3.0
