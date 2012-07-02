@@ -22,7 +22,7 @@
 namespace tsdtsdtsd\ImageServe;
 
 error_reporting(E_ALL);
-//set_error_handler('ImageServe::errorHandler',E_ALL);
+
 // Set some path constants
 if(!defined('BASE_PATH'))
     define('BASE_PATH', dirname(__FILE__) . '/');
@@ -33,8 +33,11 @@ if(!defined('LIB_PATH'))
 if(!defined('ENV'))
     define('ENV', 'development');
 
+require_once LIB_PATH . 'Logger.php';
 
-$imageServe = new ImageServe();
+$logger = new ImageServe_Logger();
+
+$imageServe = new ImageServe($logger);
 $imageServe->run();
 
 /**
@@ -65,7 +68,12 @@ class ImageServe
             )
         ),
         'pluginsPath' => './Imageserve/Plugins/',
-        'plugins' => array()
+        'plugins' => array(),
+        'logger' => array(
+            'type' => 'void',
+            'file' => './Imageserve/log/log.txt',
+            'logLevel' => ImageServe_Logger::LEVEL_ERROR
+        )
     );
 
     /**
@@ -103,20 +111,32 @@ class ImageServe
      */
     protected $_hooks = array();
 
-    public function __construct()
+    /**
+     * Stores logger class
+     * 
+     * @var Imageserve_Logger_Interface 
+     */
+    protected $_logger = null;
+
+    public function __construct(Imageserve_Logger_Interface $logger)
     {
         if(!function_exists('imagecreatetruecolor')) {
             throw new \Exception('GD Library not available.');
         }
+
+        $this->_logger = $logger;
     }
 
     public function run()
     {
         $this->_prepareConfig();
+        $this->_prepareLogger();
         $this->_preparePlugins();
-
+        
         $this->_request = $this->_getRequest($_GET);
 
+        $this->_logger->logDebug('Processing request for file "' . $this->_request['filename'] . '".');
+        
         if($this->_config['useCache'] && $this->_isCachedImage()) {
 
             $image = $this->_getImageFromCache();
@@ -162,6 +182,17 @@ class ImageServe
         }
     }
 
+    protected function _prepareLogger()
+    {
+        $loggerClass = 'tsdtsdtsd\ImageServe\ImageServe_Logger_' . ucfirst($this->_config['logger']['type']);
+        $loggerFile = LIB_PATH . 'Logger/' . ucfirst($this->_config['logger']['type']) . '.php';
+        
+        if(file_exists($loggerFile)) {
+            require_once $loggerFile;
+            $this->_logger->addLogger(new $loggerClass($this->_config['logger']));
+        }
+    }
+    
     /**
      * 
      */
@@ -196,6 +227,7 @@ class ImageServe
         }
     }
 
+    
     /**
      * Checks the request and sets request data
      * 
@@ -280,7 +312,7 @@ class ImageServe
     {
         $cacheFile = $this->_config['cachePath'] . $this->_request['filename'];
         $success = false;
-        
+
         // @todo non-blocking 
         try {
 
@@ -297,7 +329,7 @@ class ImageServe
         catch(\Exception $e) {
             throw new \Exception('Error while caching image "' . $cacheFile . '": ' . $e->getMessage());
         }
-        
+
         return $success;
     }
 
@@ -490,11 +522,6 @@ class ImageServe
         }
 
         return '';
-    }
-
-    public static function errorHandler($number, $string, $file, $line, $context)
-    {
-        var_dump($number, $string, $file, $line, $context);
     }
 
 }
