@@ -106,7 +106,7 @@ class ImageServe
     public function __construct()
     {
         if(!function_exists('imagecreatetruecolor')) {
-            throw new Exception('GD Library not available.');
+            throw new \Exception('GD Library not available.');
         }
     }
 
@@ -188,8 +188,8 @@ class ImageServe
                             $plugin->init();
                         }
                     }
-                    catch(Exception $e) {
-                        throw new Exception('Error while loading plugin "' . $pluginName . '": ' . $e->getMessage());
+                    catch(\Exception $e) {
+                        throw new \Exception('Error while loading plugin "' . $pluginName . '": ' . $e->getMessage());
                     }
                 }
             }
@@ -206,13 +206,13 @@ class ImageServe
     protected function _getRequest($params)
     {
         if(!isset($params['file']) || !is_string($params['file'])) {
-            throw new Exception('No file given.');
+            throw new \Exception('No file given.');
         }
 
         preg_match('/^(.*)_(.*)\.(png|gif|jpg|jpeg)$/', $params['file'], $fileParts);
 
         if(!isset($fileParts[1]) || !isset($fileParts[2]) || !isset($fileParts[3])) {
-            throw new Exception('Invalid request syntax.');
+            throw new \Exception('Invalid request syntax.');
         }
 
         $request = array(
@@ -222,11 +222,11 @@ class ImageServe
         );
 
         if(!file_exists($this->_config['storagePath'] . $request['blueprintFile'])) {
-            throw new Exception('Requested image does not exist.');
+            throw new \Exception('Requested image does not exist.');
         }
 
         if(!isset($this->_config['packages'][$request['package']])) {
-            throw new Exception('Package "' . $request['package'] . '" is not defined.');
+            throw new \Exception('Package "' . $request['package'] . '" is not defined.');
         }
 
         $request['blueprintSize'] = getimagesize($this->_config['storagePath'] . $request['blueprintFile']);
@@ -294,8 +294,8 @@ class ImageServe
                 $success = imagegif($image, $cacheFile);
             }
         }
-        catch(Exception $e) {
-            throw new Exception('Error while caching image "' . $cacheFile . '": ' . $e->getMessage());
+        catch(\Exception $e) {
+            throw new \Exception('Error while caching image "' . $cacheFile . '": ' . $e->getMessage());
         }
         
         return $success;
@@ -309,7 +309,7 @@ class ImageServe
         $blueprintPath = $this->_config['storagePath'] . $this->_request['blueprintFile'];
 
         if(!preg_match('/^image\/(?:gif|jpg|jpeg|png)$/i', $this->_request['mimeType'])) {
-            throw new Exception('Wrong MIME-Type.');
+            throw new \Exception('Wrong MIME-Type.');
         }
 
         /*
@@ -320,7 +320,7 @@ class ImageServe
         $newHeight = (int) $this->_getPackageOption('height', 0);
 
         if($newWidth == 0 && $newHeight == 0) {
-            throw new Exception('Misconfigured package dimensions.');
+            throw new \Exception('Misconfigured package dimensions.');
         }
 
         $blueprint = false;
@@ -344,7 +344,7 @@ class ImageServe
         }
 
         if($blueprint === false) {
-            throw new Exception('Could not open the blueprint.');
+            throw new \Exception('Could not open the blueprint.');
         }
 
         $width = imagesx($blueprint);
