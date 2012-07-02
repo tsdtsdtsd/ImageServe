@@ -45,10 +45,9 @@ class ImageServe
 
     const MODE_RESIZE = 'resize';
     const MODE_FILL = 'fill';
-    
     const PNG_QUALITY = 9;
     const JPG_QUALITY = 100;
-    
+
     /**
      * Default config
      * 
@@ -115,19 +114,23 @@ class ImageServe
     {
         $this->_prepareConfig();
         $this->_preparePlugins();
-        
+
         $this->_request = $this->_getRequest($_GET);
 
         if($this->_config['useCache'] && $this->_isCachedImage()) {
-            
+
             $image = $this->_getImageFromCache();
             $this->_serveStringAsImage($image);
-            
+
             return true;
         }
 
         $image = $this->_createImage();
-        
+
+        if($this->_config['useCache']) {
+            $this->_cacheImage($image);
+        }
+
         $this->_serveResourceAsImage($image);
     }
 
@@ -225,11 +228,11 @@ class ImageServe
         if(!isset($this->_config['packages'][$request['package']])) {
             throw new Exception('Package "' . $request['package'] . '" is not defined.');
         }
-        
+
         $request['blueprintSize'] = getimagesize($this->_config['storagePath'] . $request['blueprintFile']);
         $request['mimeType'] = $request['blueprintSize']['mime'];
         $request['imageType'] = $request['blueprintSize'][2];
-        
+
         return $request;
     }
 
@@ -261,11 +264,43 @@ class ImageServe
      * 
      * @return string
      */
-    protected function _getImageFromCache() 
+    protected function _getImageFromCache()
     {
         return file_get_contents($this->_config['cachePath'] . $this->_request['filename']);
     }
-    
+
+    /**
+     * Saves a image resource to filesystem
+     * 
+     * @param resource $image
+     * @return bool
+     * @throws Exception 
+     */
+    protected function _cacheImage($image)
+    {
+        $cacheFile = $this->_config['cachePath'] . $this->_request['filename'];
+        $success = false;
+        
+        // @todo non-blocking 
+        try {
+
+            if(preg_match('/^image\/(?:jpg|jpeg)$/i', $this->_request['mimeType'])) {
+                $success = imagejpeg($image, $cacheFile, self::JPG_QUALITY);
+            }
+            else if(preg_match('/^image\/png$/i', $this->_request['mimeType'])) {
+                $success = imagepng($image, $cacheFile, self::PNG_QUALITY);
+            }
+            else if(preg_match('/^image\/gif$/i', $this->_request['mimeType'])) {
+                $success = imagegif($image, $cacheFile);
+            }
+        }
+        catch(Exception $e) {
+            throw new Exception('Error while caching image "' . $cacheFile . '": ' . $e->getMessage());
+        }
+        
+        return $success;
+    }
+
     /**
      * 
      */
@@ -333,27 +368,27 @@ class ImageServe
         else if($newWidth == 0) {
             $newWidth = floor($width * ($newHeight / $height));
         }
-        
+
         $resizedWidth = $newWidth;
         $resizedHeight = $newHeight;
-        
+
         $hRatio = $newHeight / imagesy($blueprint);
         $wRatio = $newWidth / imagesx($blueprint);
         $ratio = min($hRatio, $wRatio);
-    
+
         if(!$this->_getPackageOption('allowUpscaling', false) && $ratio > 1.0) {
             $ratio = 1.0;
         }
-    
+
         /*
          * Consider fill mode
          */
 
         if($this->_getPackageOption('mode') == self::MODE_FILL) {
-            
+
             $resizedWidth = floor($width * $ratio);
             $resizedHeight = floor($height * $ratio);
-            
+
             $imageOffsetX = floor(($newWidth - $resizedWidth) / 2);
             $imageOffsetY = floor(($newHeight - $resizedHeight) / 2);
         }
@@ -388,7 +423,7 @@ class ImageServe
 //        header('Content-Length: ' . '2180000');
         header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
         header("Pragma: no-cache");
-        
+
         if(preg_match('/^image\/(?:jpg|jpeg)$/i', $this->_request['mimeType'])) {
             imagejpeg($image, null, self::JPG_QUALITY);
         }
@@ -412,7 +447,7 @@ class ImageServe
         header('Content-Length: ' . strlen($image));
         header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
         header("Pragma: no-cache");
-        
+
         echo $image;
     }
 
