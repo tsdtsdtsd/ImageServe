@@ -19,6 +19,9 @@
  * @version 0.1
  */
 
+namespace tsdtsdtsd\ImageServe;
+use Exception;
+
 error_reporting(E_ALL);
 
 // Set some path constants
@@ -194,7 +197,7 @@ class ImageServe
      */
     protected function _prepareLogger()
     {
-        $loggerClass = 'ImageServe_Logger_' . ucfirst($this->_config['logger']['type']);
+        $loggerClass = 'tsdtsdtsd\ImageServe\ImageServe_Logger_' . ucfirst($this->_config['logger']['type']);
         $loggerFile = LIB_PATH . 'Logger/' . ucfirst($this->_config['logger']['type']) . '.php';
 
         if(file_exists($loggerFile)) {

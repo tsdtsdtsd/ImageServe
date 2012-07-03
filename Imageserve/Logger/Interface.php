@@ -1,5 +1,7 @@
 <?php
 
+namespace tsdtsdtsd\ImageServe;
+
 /**
  * Logger interface.
  * 

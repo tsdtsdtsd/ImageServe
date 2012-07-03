@@ -1,5 +1,7 @@
 <?php
 
+namespace tsdtsdtsd\ImageServe;
+
 require_once LIB_PATH . '/Logger/Interface.php';
 
 /**
