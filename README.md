@@ -29,9 +29,7 @@ Basic Usage
 * Customize config and define packages
 * Store images in storage folder
 * Set propper rights for cache folder
-* Request image 
-
-    e.g. <img src="http://localhost/img/banana_thumbnail.png" />
+* Request image e.g. &lt;img src="http://localhost/img/banana_thumbnail.png" /&gt;
 
 See wiki for detailed information
 
