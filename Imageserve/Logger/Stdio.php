@@ -13,7 +13,7 @@ require_once LIB_PATH . '/Logger/Interface.php';
  * @package Logger
  * @subpackage Stdio
  */
-class Imageserve_Logger_Stdio implements Imageserve_Logger_Interface
+class Imageserve_Logger_Stdio implements ImageServe_Logger_Interface
 {
 
     /**
@@ -22,7 +22,7 @@ class Imageserve_Logger_Stdio implements Imageserve_Logger_Interface
      * @var array
      */
     private $_options = array(
-        'logLevel' => Imageserve_Logger::LEVEL_ERROR
+        'logLevel' => ImageServe_Logger::LEVEL_ERROR
     );
 
     /**

@@ -2,3 +2,4 @@ Imageserve/config.php
 _dev
 test.php
 Imageserve/log/*
+Imageserve/storage/cache/*

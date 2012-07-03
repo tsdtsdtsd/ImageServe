@@ -16,9 +16,9 @@ Features & ToDos
 
 * Return resized image
 * Rendered images can be chached
-* Todo: Debuggin/Logging
+* Debugging/Logging
 * Todo: Default image
-* Todo: Garbage collection
+* Todo: Garbage collection & cache lifetimes
 * Todo: Plugins
 * Todo: Crop mode
 
@@ -29,7 +29,7 @@ Basic Usage
 * Customize config and define packages
 * Store images in storage folder
 * Set propper rights for cache folder
-* Request image e.g. http://localhost/img/banana_thumbnail.png
+* Request image e.g. <img src="http://localhost/img/banana_thumbnail.png" />
 
 See wiki for detailed information
 

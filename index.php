@@ -20,6 +20,7 @@
  */
 
 namespace tsdtsdtsd\ImageServe;
+use Exception;
 
 error_reporting(E_ALL);
 
@@ -121,26 +122,32 @@ class ImageServe
     public function __construct(Imageserve_Logger_Interface $logger)
     {
         if(!function_exists('imagecreatetruecolor')) {
-            throw new \Exception('GD Library not available.');
+            throw new Exception('GD Library not available.');
         }
 
         $this->_logger = $logger;
     }
 
+    /**
+     * Main method, runs the gears
+     * 
+     * @return bool
+     */
     public function run()
     {
         $this->_prepareConfig();
         $this->_prepareLogger();
         $this->_preparePlugins();
-        
+
         $this->_request = $this->_getRequest($_GET);
 
         $this->_logger->logDebug('Processing request for file "' . $this->_request['filename'] . '".');
-        
+
         if($this->_config['useCache'] && $this->_isCachedImage()) {
 
             $image = $this->_getImageFromCache();
             $this->_serveStringAsImage($image);
+            $this->_logger->logDebug('Image served from cache.');
 
             return true;
         }
@@ -148,10 +155,13 @@ class ImageServe
         $image = $this->_createImage();
 
         if($this->_config['useCache']) {
-            $this->_cacheImage($image);
+            $success = $this->_cacheImage($image);
+            $this->_logger->logDebug($success ? 'Image saved to cache.' : 'Error while saving image to cache.');
         }
 
         $this->_serveResourceAsImage($image);
+
+        return true;
     }
 
     /**
@@ -182,17 +192,20 @@ class ImageServe
         }
     }
 
+    /**
+     *  Instanciates concrete logger class and adds it to the composite
+     */
     protected function _prepareLogger()
     {
         $loggerClass = 'tsdtsdtsd\ImageServe\ImageServe_Logger_' . ucfirst($this->_config['logger']['type']);
         $loggerFile = LIB_PATH . 'Logger/' . ucfirst($this->_config['logger']['type']) . '.php';
-        
+
         if(file_exists($loggerFile)) {
             require_once $loggerFile;
             $this->_logger->addLogger(new $loggerClass($this->_config['logger']));
         }
     }
-    
+
     /**
      * 
      */
@@ -219,15 +232,14 @@ class ImageServe
                             $plugin->init();
                         }
                     }
-                    catch(\Exception $e) {
-                        throw new \Exception('Error while loading plugin "' . $pluginName . '": ' . $e->getMessage());
+                    catch(Exception $e) {
+                        throw new Exception('Error while loading plugin "' . $pluginName . '": ' . $e->getMessage());
                     }
                 }
             }
         }
     }
 
-    
     /**
      * Checks the request and sets request data
      * 
@@ -238,13 +250,13 @@ class ImageServe
     protected function _getRequest($params)
     {
         if(!isset($params['file']) || !is_string($params['file'])) {
-            throw new \Exception('No file given.');
+            throw new Exception('No file given.');
         }
 
         preg_match('/^(.*)_(.*)\.(png|gif|jpg|jpeg)$/', $params['file'], $fileParts);
 
         if(!isset($fileParts[1]) || !isset($fileParts[2]) || !isset($fileParts[3])) {
-            throw new \Exception('Invalid request syntax.');
+            throw new Exception('Invalid request syntax.');
         }
 
         $request = array(
@@ -254,11 +266,11 @@ class ImageServe
         );
 
         if(!file_exists($this->_config['storagePath'] . $request['blueprintFile'])) {
-            throw new \Exception('Requested image does not exist.');
+            throw new Exception('Requested image does not exist.');
         }
 
         if(!isset($this->_config['packages'][$request['package']])) {
-            throw new \Exception('Package "' . $request['package'] . '" is not defined.');
+            throw new Exception('Package "' . $request['package'] . '" is not defined.');
         }
 
         $request['blueprintSize'] = getimagesize($this->_config['storagePath'] . $request['blueprintFile']);
@@ -286,9 +298,15 @@ class ImageServe
         
     }
 
+    /**
+     * Checks if requested image is cached
+     * 
+     * @return bool
+     */
     protected function _isCachedImage()
     {
-        
+        // @todo max lifetime
+        return file_exists($this->_config['cachePath'] . $this->_request['filename']);
     }
 
     /**
@@ -326,8 +344,8 @@ class ImageServe
                 $success = imagegif($image, $cacheFile);
             }
         }
-        catch(\Exception $e) {
-            throw new \Exception('Error while caching image "' . $cacheFile . '": ' . $e->getMessage());
+        catch(Exception $e) {
+            throw new Exception('Error while caching image "' . $cacheFile . '": ' . $e->getMessage());
         }
 
         return $success;
@@ -341,7 +359,7 @@ class ImageServe
         $blueprintPath = $this->_config['storagePath'] . $this->_request['blueprintFile'];
 
         if(!preg_match('/^image\/(?:gif|jpg|jpeg|png)$/i', $this->_request['mimeType'])) {
-            throw new \Exception('Wrong MIME-Type.');
+            throw new Exception('Wrong MIME-Type.');
         }
 
         /*
@@ -352,7 +370,7 @@ class ImageServe
         $newHeight = (int) $this->_getPackageOption('height', 0);
 
         if($newWidth == 0 && $newHeight == 0) {
-            throw new \Exception('Misconfigured package dimensions.');
+            throw new Exception('Misconfigured package dimensions.');
         }
 
         $blueprint = false;
@@ -376,7 +394,7 @@ class ImageServe
         }
 
         if($blueprint === false) {
-            throw new \Exception('Could not open the blueprint.');
+            throw new Exception('Could not open the blueprint.');
         }
 
         $width = imagesx($blueprint);
@@ -481,14 +499,6 @@ class ImageServe
         header("Pragma: no-cache");
 
         echo $image;
-    }
-
-    /**
-     * 
-     */
-    protected function _serveFromCache()
-    {
-        
     }
 
     /**

@@ -13,7 +13,7 @@ require_once LIB_PATH . '/Logger/Interface.php';
  * @package Logger
  * @subpackage Void
  */
-class Imageserve_Logger_Void implements Imageserve_Logger_Interface
+class Imageserve_Logger_Void implements ImageServe_Logger_Interface
 {
 
     /**
