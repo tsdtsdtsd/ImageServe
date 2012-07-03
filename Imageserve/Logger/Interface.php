@@ -10,7 +10,7 @@ namespace tsdtsdtsd\ImageServe;
  * @category Imageserve
  * @package Logger
  */
-interface Imageserve_Logger_Interface
+interface ImageServe_Logger_Interface
 {
     public function log($logLevel, $message);
 }
