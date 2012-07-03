@@ -30,7 +30,7 @@ Basic Usage
 * Store images in storage folder
 * Set propper rights for cache folder
 * Request image 
-  e.g. <img src="http://localhost/img/banana_thumbnail.png" />
+    e.g. <img src="http://localhost/img/banana_thumbnail.png" />
 
 See wiki for detailed information
 
