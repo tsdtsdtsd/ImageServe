@@ -19,10 +19,8 @@
  * @version 0.1
  */
 
-namespace tsdtsdtsd\ImageServe;
-use Exception;
-
 error_reporting(E_ALL);
+set_error_handler('ImageServe::errorHandler',E_ALL);
 
 // Set some path constants
 if(!defined('BASE_PATH'))
@@ -39,6 +37,7 @@ require_once LIB_PATH . 'Logger.php';
 $logger = new ImageServe_Logger();
 
 $imageServe = new ImageServe($logger);
+
 $imageServe->run();
 
 /**
@@ -117,15 +116,18 @@ class ImageServe
      * 
      * @var Imageserve_Logger_Interface 
      */
-    protected $_logger = null;
+    public $logger = null;
 
+    /**
+     * Constructor
+     */
     public function __construct(Imageserve_Logger_Interface $logger)
     {
         if(!function_exists('imagecreatetruecolor')) {
             throw new Exception('GD Library not available.');
         }
 
-        $this->_logger = $logger;
+        $this->logger = $logger;
     }
 
     /**
@@ -139,15 +141,17 @@ class ImageServe
         $this->_prepareLogger();
         $this->_preparePlugins();
 
+        $this->logger->logDebug('New Request.');
+
         $this->_request = $this->_getRequest($_GET);
 
-        $this->_logger->logDebug('Processing request for file "' . $this->_request['filename'] . '".');
+        $this->logger->logDebug('Processing request for file "' . $this->_request['filename'] . '".');
 
         if($this->_config['useCache'] && $this->_isCachedImage()) {
 
             $image = $this->_getImageFromCache();
             $this->_serveStringAsImage($image);
-            $this->_logger->logDebug('Image served from cache.');
+            $this->logger->logDebug('Image served from cache.');
 
             return true;
         }
@@ -156,7 +160,14 @@ class ImageServe
 
         if($this->_config['useCache']) {
             $success = $this->_cacheImage($image);
-            $this->_logger->logDebug($success ? 'Image saved to cache.' : 'Error while saving image to cache.');
+
+            if($success) {
+                $this->logger->logDebug('Image saved to cache.');
+            } 
+            else {
+                $this->logger->logError('Error while saving image to cache.');
+            }
+            
         }
 
         $this->_serveResourceAsImage($image);
@@ -197,21 +208,25 @@ class ImageServe
      */
     protected function _prepareLogger()
     {
-        $loggerClass = 'tsdtsdtsd\ImageServe\ImageServe_Logger_' . ucfirst($this->_config['logger']['type']);
+        $loggerClass = 'ImageServe_Logger_' . ucfirst($this->_config['logger']['type']);
         $loggerFile = LIB_PATH . 'Logger/' . ucfirst($this->_config['logger']['type']) . '.php';
 
         if(file_exists($loggerFile)) {
             require_once $loggerFile;
-            $this->_logger->addLogger(new $loggerClass($this->_config['logger']));
+            $this->logger->addLogger(new $loggerClass($this->_config['logger']));
         }
     }
 
     /**
-     * 
+     * Register and initiate plugins
+     *
+     * @throws Exception 
      */
     protected function _preparePlugins()
     {
         if(!empty($this->_config['plugins']) && is_array($this->_config['plugins'])) {
+
+            require_once LIB_PATH . 'Plugin.php';
 
             foreach($this->_config['plugins'] as $pluginName) {
 
@@ -233,8 +248,12 @@ class ImageServe
                         }
                     }
                     catch(Exception $e) {
+                        $this->logger->logError('Error while loading plugin "' . $pluginName . '": ' . $e->getMessage());
                         throw new Exception('Error while loading plugin "' . $pluginName . '": ' . $e->getMessage());
                     }
+                }
+                else {
+                    $this->logger->logError('Error while loading plugin "' . $pluginName . '": File ' . $pluginFile . ' not found!');
                 }
             }
         }
@@ -249,6 +268,8 @@ class ImageServe
      */
     protected function _getRequest($params)
     {
+        $this->_callHook('pre_getRequest', $params);
+
         if(!isset($params['file']) || !is_string($params['file'])) {
             throw new Exception('No file given.');
         }
@@ -277,6 +298,8 @@ class ImageServe
         $request['mimeType'] = $request['blueprintSize']['mime'];
         $request['imageType'] = $request['blueprintSize'][2];
 
+        $this->_callHook('post_getRequest', $request);
+
         return $request;
     }
 
@@ -293,9 +316,35 @@ class ImageServe
         }
     }
 
-    protected function _callHook($hookName, $params = array())
+    /**
+     * Adds a hook to the stack
+     */
+    public function addHook($hookName, $pluginName, $callback) 
     {
-        
+        $this->_hooks[$hookName][] = array(
+            'pluginName' => $pluginName,
+            'callback' => $callback
+        );
+    }
+
+    /**
+     * Calls registered hooks with given name and passes reference to parameters
+     *
+     * @param array &$Params
+     */
+    protected function _callHook($hookName, &$params = array())
+    {
+        if(isset($this->_hooks[$hookName]) && is_array($this->_hooks[$hookName])) {
+            
+            foreach($this->_hooks[$hookName] as $hook) {
+
+                if(!isset($hook['pluginName']) || !isset($hook['callback']) || !isset($this->_plugins[$hook['pluginName']])) {
+                    continue;
+                }
+
+                $this->_plugins[$hook['pluginName']]->$hook['callback']($params);
+            }
+        }
     }
 
     /**
@@ -534,4 +583,11 @@ class ImageServe
         return '';
     }
 
+    /**
+     * Work in progress: error handler
+     */
+    public static function errorHandler($number, $string, $file, $line, $context)
+    {
+        var_dump($number, $string, $file, $line, $context);
+    }
 }

@@ -17,9 +17,9 @@ Features & ToDos
 * Return resized image
 * Rendered images can be chached
 * Debugging/Logging
+* Plugins
 * Todo: Default image
 * Todo: Garbage collection & cache lifetimes
-* Todo: Plugins
 * Todo: Crop mode
 
 Basic Usage

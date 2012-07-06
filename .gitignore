@@ -1,5 +1,5 @@
 Imageserve/config.php
 _dev
-test.php
+./test.php
 Imageserve/log/*
 Imageserve/storage/cache/*
